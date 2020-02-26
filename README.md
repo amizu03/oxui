@@ -1,6 +1,9 @@
 # OXUI
 OXUI Framework - oxy's static GUI framework
 
+# DEMO
+![](demo.png)
+
 # GETTING STARTED
 
 Creating Window Objects:
