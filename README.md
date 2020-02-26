@@ -93,7 +93,8 @@ window->wndproc( hwnd, msg, wparam, lparam );
 Finding / Grabbing GUI Object Values:
 Function oxui::window::find_obj will return a pointer to the stored value inside a control on a given window.
 ```cpp
-#define FIND( type, object, tab_name, group_name, object_name, type_name ) static auto& object = *( type* ) window->find_obj( OSTR( tab_name ), OSTR( group_name ), OSTR( object_name ), type_name )
+#define FIND( type, object, tab_name, group_name, object_name, type_name ) \
+static auto& object = *( type* ) window->find_obj( OSTR( tab_name ), OSTR( group_name ), OSTR( object_name ), type_name )
 ```
 
 Checking if a GUI is Open:
