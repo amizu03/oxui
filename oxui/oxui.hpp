@@ -12,5 +12,9 @@
 #include "objects/checkbox.hpp"
 #include "objects/slider.hpp"
 #include "objects/button.hpp"
+#include "objects/dropdown.hpp"
+#include "objects/textbox.hpp"
+#include "objects/keybind.hpp"
+#include "objects/colorpicker.hpp"
 
 #endif // OXUI_HPP

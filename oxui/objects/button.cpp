@@ -18,7 +18,7 @@ void oxui::button::draw( ) {
 	auto& parent_panel = find_parent< panel >( object_panel );
 	auto& parent_window = find_parent< window >( object_window );
 
-	auto& font = parent_panel.fonts [ OSTR( "object") ];
+	auto& font = parent_panel.fonts [ OSTR( "object" ) ];
 
 	auto& cursor_pos = parent_window.cursor_pos;
 
@@ -33,5 +33,5 @@ void oxui::button::draw( ) {
 	auto check_dimensions = rect( 0, 0, 10, 6 );
 
 	/* centered text */
-	binds::text( pos( area_center_x - text_size.w / 2 - 1, area_center_y - text_size.h / 2 - 1 ), font, label, theme.text, true );
+	binds::text( pos( area_center_x - text_size.w / 2 - 1, area_center_y - text_size.h / 2 - 1 ), font, label, theme.text, false );
 }

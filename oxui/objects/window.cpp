@@ -1,4 +1,4 @@
-#include "window.hpp"
+﻿#include "window.hpp"
 #include "../panels/panel.hpp"
 #include "shapes.hpp"
 #include "../themes/purple.hpp"
@@ -6,8 +6,17 @@
 #include "../json/json.hpp"
 #include <string>
 #include <fstream>
+
+/* menu objects */
 #include "checkbox.hpp"
 #include "slider.hpp"
+#include "dropdown.hpp"
+#include "textbox.hpp"
+#include "keybind.hpp"
+#include "colorpicker.hpp"
+
+/* resources */
+#include "../../resources/images/微信.hpp"
 
 void* oxui::window::find_obj( const str& tab_name, const str& group_name, const str& object_name, object_type type ) {
 	for ( auto& _tab : objects ) {
@@ -21,15 +30,51 @@ void* oxui::window::find_obj( const str& tab_name, const str& group_name, const 
 					for ( auto& _control : group->objects ) {
 						switch ( _control->type ) {
 						case object_checkbox: {
-							auto as_checkbox = std::static_pointer_cast< oxui::checkbox >( _control );
+							auto as_checkbox = std::static_pointer_cast< checkbox >( _control );
+
 							if ( as_checkbox->label == object_name )
 								return &as_checkbox->checked;
+
 							break;
 						}
 						case object_slider: {
-							auto as_slider = std::static_pointer_cast< oxui::slider >( _control );
+							auto as_slider = std::static_pointer_cast< slider >( _control );
+
 							if ( as_slider->label == object_name )
 								return &as_slider->value;
+
+							break;
+						}
+						case object_dropdown: {
+							auto as_dropdown = std::static_pointer_cast< dropdown >( _control );
+
+							if ( as_dropdown->label == object_name )
+								return &as_dropdown->value;
+
+							break;
+						}
+						case object_textbox: {
+							auto as_textbox = std::static_pointer_cast< textbox >( _control );
+
+							if ( as_textbox->label == object_name )
+								return &as_textbox->buf;
+
+							break;
+						}
+						case object_keybind: {
+							auto as_keybind = std::static_pointer_cast< keybind >( _control );
+
+							if ( as_keybind->label == object_name )
+								return &as_keybind->key;
+
+							break;
+						}
+						case object_colorpicker: {
+							auto as_colorpicker = std::static_pointer_cast< color_picker >( _control );
+
+							if ( as_colorpicker->label == object_name )
+								return &as_colorpicker->clr;
+
 							break;
 						}
 						}
@@ -69,10 +114,37 @@ void oxui::window::save_state( const str& file ) {
 					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_slider->value;
 					break;
 				}
+				case object_dropdown: {
+					auto as_dropdown = ( ( std::shared_ptr< dropdown >& ) object );
+					auto obj_str = std::string( as_dropdown->label.begin( ), as_dropdown->label.end( ) );
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_dropdown->value;
+					break;
 				}
+				case object_textbox: {
+					auto as_textbox = ( ( std::shared_ptr< textbox >& ) object );
+					auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_textbox->buf;
+					break;
+				}
+				case object_keybind: {
+					auto as_keybind = ( ( std::shared_ptr< keybind >& ) object );
+					auto obj_str = std::string ( as_keybind->label.begin ( ), as_keybind->label.end ( ) );
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_keybind->key;
+					break;
+				}
+				case object_colorpicker: {
+					auto as_colorpicker = ( ( std::shared_ptr< color_picker >& ) object );
+					auto obj_str = std::string ( as_colorpicker->label.begin ( ), as_colorpicker->label.end ( ) );
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "r" ) ] = as_colorpicker->clr.r;
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "g" ) ] = as_colorpicker->clr.g;
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "b" ) ] = as_colorpicker->clr.b;
+					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "a" ) ] = as_colorpicker->clr.a;
+					break;
+				}
+				}
+				} );
 			} );
 		} );
-	} );
 
 	const auto dump = json.dump( 4 );
 
@@ -145,10 +217,58 @@ void oxui::window::load_state( const str& file ) {
 					as_slider->value = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< double >( );
 					break;
 				}
+				case object_dropdown: {
+					auto as_dropdown = ( dropdown* ) object.get ( );
+					auto obj_str = std::string ( as_dropdown->label.begin ( ), as_dropdown->label.end ( ) );
+
+					/* control doesn't exist */
+					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
+						return;
+
+					as_dropdown->value = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< int > ( );
+					break;
 				}
+				//case object_textbox: {
+				//	auto as_textbox = ( textbox* ) object.get ( );
+				//	auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
+				//
+				//	/* control doesn't exist */
+				//	if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
+				//		return;
+				//
+				//	const auto as_str = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< std::string > ( );
+				//	as_textbox->buf = std::wstring ( as_str.begin ( ), as_str.end ( ) );
+				//	break;
+				//}
+				case object_keybind: {
+					auto as_keybind = ( keybind* ) object.get ( );
+					auto obj_str = std::string ( as_keybind->label.begin ( ), as_keybind->label.end ( ) );
+
+					/* control doesn't exist */
+					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
+						return;
+
+					as_keybind->key = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< int > ( );
+					break;
+				}
+				case object_colorpicker: {
+					auto as_colorpicker = ( color_picker* ) object.get ( );
+					auto obj_str = std::string ( as_colorpicker->label.begin ( ), as_colorpicker->label.end ( ) );
+
+					/* control doesn't exist */
+					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
+						return;
+
+					as_colorpicker->clr.r = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "r" ) ].get< int > ( );
+					as_colorpicker->clr.g = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "g" ) ].get< int > ( );
+					as_colorpicker->clr.b = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "b" ) ].get< int > ( );
+					as_colorpicker->clr.a = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "a" ) ].get< int > ( );
+					break;
+				}
+				}
+				} );
 			} );
 		} );
-	} );
 }
 
 void oxui::window::think( ) {
@@ -171,6 +291,10 @@ void oxui::window::think( ) {
 }
 
 void oxui::window::draw( ) {
+	shapes::finished_input_frame = false;
+
+	render_overlay = false;
+
 	if ( toggle_bind ) {
 		if ( !pressing_open_key && GetAsyncKeyState( toggle_bind ) ) {
 			pressing_open_key = true;
@@ -178,11 +302,18 @@ void oxui::window::draw( ) {
 		else if ( pressing_open_key && !GetAsyncKeyState( toggle_bind ) ) {
 			open = !open;
 			pressing_open_key = false;
+
+			if ( open )
+				g_input = true;
 		}
 	}
 
-	if ( !open )
+	if ( !open ) {
+		render_overlay = false;
+		handle_keyboard = false;
+		g_input = false;
 		return;
+	}
 
 	auto& parent_panel = find_parent< panel >( object_panel );
 
@@ -195,8 +326,11 @@ void oxui::window::draw( ) {
 	binds::fill_rect( area, theme.bg );
 
 	/* title bar */
-	shapes::box( rect( area.x, area.y - 26, area.w, 26 ), 0.0, false, false, true, false, false );
-	binds::text( pos( area.x + 4, area.y - 28 + 6 ), parent_panel.fonts [ OSTR( "title") ], title, theme.text, true );
+	binds::fill_rect( rect( area.x, area.y - 26, area.w, 26 ), theme.title_bar );
+	shapes::box( rect( area.x, area.y - 26, area.w, 26 ), 0.0, false, false, true, false, false, false );
+	// render::texture( rsc::images::weixin_logo, area.x + 4, area.y - 28 + 6, 118, 100, 0.133f );
+	binds::text( pos( area.x + 4 /* + 24 */, area.y - 28 + 6 ), parent_panel.fonts [ OSTR( "title" ) ], title, theme.title_text, false );
+	binds::rect ( rect ( area.x - 1, area.y - 1 - 26, area.w + 1, area.h + 1 + 26 ), color ( 0, 0, 0, 255 ) );
 
 	std::vector< std::pair< std::shared_ptr< tab >, int > > tab_list;
 	auto total_tabs_w = 0;
@@ -205,7 +339,7 @@ void oxui::window::draw( ) {
 			auto as_tab = std::static_pointer_cast< tab >( object );
 
 			rect bounds;
-			binds::text_bounds( parent_panel.fonts [ OSTR( "object") ], as_tab->title, bounds );
+			binds::text_bounds( parent_panel.fonts [ OSTR( "object" ) ], as_tab->title, bounds );
 			total_tabs_w += bounds.w + 4;
 
 			tab_list.push_back( std::pair< std::shared_ptr< tab >, int >( as_tab, bounds.w ) );
@@ -245,7 +379,7 @@ void oxui::window::draw( ) {
 			text_height = 2 * ( time_since_click * ( 1.0 / theme.animation_speed ) );
 		}
 
-		binds::text( pos( last_tab_pos.x, area.y - 28 + 6 - text_height ), parent_panel.fonts [ OSTR( "object") ], object.first->title, color( theme.text.r, theme.text .g, theme.text .b, alpha ), false );
+		binds::text( pos( last_tab_pos.x, area.y - 28 + 6 - text_height ), parent_panel.fonts [ OSTR( "object" ) ], object.first->title, color( theme.title_text.r, theme.title_text.g, theme.title_text.b, alpha ), false );
 		binds::line( pos( last_tab_pos.x + object.second / 2 - bar_width / 2, area.y - 28 + 6 + 16 ), pos( last_tab_pos.x + object.second / 2 + bar_width / 2, area.y - 28 + 6 + 16 ), theme.main );
 
 		last_tab_pos.x += object.second + 4;
@@ -260,5 +394,10 @@ void oxui::window::draw( ) {
 				child->draw( );
 			}
 		);
-	} );
+		} );
+
+	if ( render_overlay )
+		overlay_func( );
+
+	shapes::click_switch = false;
 }
