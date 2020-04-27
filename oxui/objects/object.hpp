@@ -19,7 +19,8 @@ namespace oxui {
 		object_textbox,
 		object_dropdown,
 		object_colorpicker,
-		object_keybind
+		object_keybind,
+		object_label
 	};
 
 	/* deactivating input for objects of lower order */
@@ -57,13 +58,33 @@ namespace oxui {
 		void animate( const rect& area );
 
 		bool hovering( ) {
-			pos mouse_pos;
-			binds::mouse_pos( mouse_pos );
-			return mouse_pos.x >= area.x && mouse_pos.y >= area.y && mouse_pos.x <= area.x + area.w && mouse_pos.y <= area.y + area.h;
+			//pos mouse_pos;
+			//binds::mouse_pos( mouse_pos );
+			//return mouse_pos.x >= area.x && mouse_pos.y >= area.y && mouse_pos.x <= area.x + area.w && mouse_pos.y <= area.y + area.h;
+			return false;
 		}
 
 		bool clicking( ) {
-			return hovering( ) && GetKeyState( VK_LBUTTON ) & KF_UP;
+			//return hovering( ) && GetKeyState( VK_LBUTTON ) & KF_UP;
+			return false;
+		}
+
+		int calc_height ( ) {
+			switch ( type ) {
+			case object_slider:
+				return theme.spacing + theme.spacing / 2;
+			case object_textbox:
+				return theme.spacing * 2 + theme.spacing / 2;
+			case object_dropdown:
+			case object_colorpicker:
+			case object_keybind:
+			case object_label:
+			case object_button:
+			case object_checkbox:
+				return area.h;
+			}
+
+			return 0;
 		}
 
 		virtual void draw( ) = 0;

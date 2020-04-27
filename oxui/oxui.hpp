@@ -16,5 +16,6 @@
 #include "objects/textbox.hpp"
 #include "objects/keybind.hpp"
 #include "objects/colorpicker.hpp"
+#include "objects/label.hpp"
 
 #endif // OXUI_HPP

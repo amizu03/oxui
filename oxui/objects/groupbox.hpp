@@ -11,6 +11,9 @@ namespace oxui {
 	*	INFO: Container for control objects.
 	*/
 	class group : public obj {
+		double scroll_offset = 0.0;
+		int max_height = 0;
+
 	public:
 		std::vector< std::shared_ptr< obj > > objects;
 		str title;

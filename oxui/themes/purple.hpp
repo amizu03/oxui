@@ -18,7 +18,7 @@ namespace oxui {
 		color title_bar = color( 42, 42, 42, 255 );
 		*/
 
-		int spacing = 26;
+		int spacing = 18;
 		double animation_speed = 0.4;
 		int list_spacing = 0;
 		color bg = color( 22, 18, 22, 255 );

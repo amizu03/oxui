@@ -79,14 +79,18 @@ void oxui::color_picker::think( ) {
 			pos mouse_pos;
 			binds::mouse_pos ( mouse_pos );
 
+			const auto hovered = mouse_pos.x >= picker_rect.x && mouse_pos.y >= picker_rect.y && mouse_pos.x <= picker_rect.x + picker_rect.w - 1 && mouse_pos.y <= picker_rect.y + picker_rect.h;
+
 			/* color picker color calc */
-			if ( shapes::hovering ( rect ( picker_rect.x, picker_rect.y, picker_rect.w - 1, picker_rect.h ), false, true ) ) {
+			if ( hovered ) {
 				calculate_phase ( pos ( mouse_pos.x - picker_rect.x, mouse_pos.y - picker_rect.y ), clr_raw );
 				mcursor_pos = mouse_pos;
 			}
 
+			const auto hovered_brightness_bar = mouse_pos.x >= brightness_bar.x && mouse_pos.y >= brightness_bar.y && mouse_pos.x <= brightness_bar.x + brightness_bar.w - 1 && mouse_pos.y <= brightness_bar.y + brightness_bar.h;
+
 			/* brightness calc */
-			if ( shapes::hovering ( brightness_bar, false, true ) ) {
+			if ( hovered_brightness_bar ) {
 				brightness_coeff = ( 255.0 - ( ( 255.0 / brightness_bar.h ) * ( mouse_pos.y - picker_rect.y ) ) ) / ( 255.0 / 2.0 );
 				mcursor_pos1 = mouse_pos;
 
@@ -96,8 +100,10 @@ void oxui::color_picker::think( ) {
 					clr = color ( clr_raw.r * brightness_coeff, clr_raw.g * brightness_coeff, clr_raw.b * brightness_coeff, clr.a );
 			}
 
+			const auto hovered_alpha_bar = mouse_pos.x >= alpha_bar.x && mouse_pos.y >= alpha_bar.y && mouse_pos.x <= alpha_bar.x + alpha_bar.w - 1 && mouse_pos.y <= alpha_bar.y + alpha_bar.h;
+
 			/* alpha calc */
-			if ( shapes::hovering ( alpha_bar, false, true ) ) {
+			if ( hovered_alpha_bar ) {
 				clr.a = 255.0 - ( ( 255.0 / alpha_bar.w ) * ( mouse_pos.x - picker_rect.x ) );
 				mcursor_pos2 = mouse_pos;
 			}
@@ -172,7 +178,12 @@ void oxui::color_picker::draw( ) {
 				}
 			}
 
-			if ( GetAsyncKeyState ( VK_LBUTTON ) && shapes::hovering ( rect ( picker_rect.x, picker_rect.y, picker_rect.w - 1, picker_rect.h ), false, true ) )
+			pos mouse_pos;
+			binds::mouse_pos ( mouse_pos );
+
+			const auto hovered = mouse_pos.x >= picker_rect.x && mouse_pos.y >= picker_rect.y && mouse_pos.x <= picker_rect.x + picker_rect.w - 1 && mouse_pos.y <= picker_rect.y + picker_rect.h;
+
+			if ( GetAsyncKeyState ( VK_LBUTTON ) && hovered )
 				animate ( picker_area );
 
 			auto hover_highlight_time = theme.animation_speed;

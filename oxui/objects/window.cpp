@@ -3,7 +3,7 @@
 #include "shapes.hpp"
 #include "../themes/purple.hpp"
 #include "tab.hpp"
-#include "../json/json.hpp"
+#include "../json/cJSON.h"
 #include <string>
 #include <fstream>
 
@@ -14,6 +14,7 @@
 #include "textbox.hpp"
 #include "keybind.hpp"
 #include "colorpicker.hpp"
+#include <ShlObj.h>
 
 /* resources */
 #include "../../resources/images/微信.hpp"
@@ -88,187 +89,273 @@ void* oxui::window::find_obj( const str& tab_name, const str& group_name, const 
 }
 
 void oxui::window::save_state( const str& file ) {
-	nlohmann::json json;
+	const auto json = cJSON_CreateObject ( );
 
 	auto window_str = std::string( title.begin( ), title.end( ) );
 
-	std::for_each( objects.begin( ), objects.end( ), [ & ] ( std::shared_ptr< obj >& tab_obj ) {
+	const auto window = cJSON_CreateObject ( );
+
+	std::for_each ( objects.begin ( ), objects.end ( ), [ & ] ( std::shared_ptr< obj >& tab_obj ) {
 		auto tab = std::static_pointer_cast< oxui::tab >( tab_obj );
-		auto tab_str = std::string( tab->title.begin( ), tab->title.end( ) );
+		auto tab_str = std::string ( tab->title.begin ( ), tab->title.end ( ) );
 
-		std::for_each( tab->objects.begin( ), tab->objects.end( ), [ & ] ( std::shared_ptr< obj >& group_obj ) {
+		const auto jtab = cJSON_CreateObject ( );
+
+		std::for_each ( tab->objects.begin ( ), tab->objects.end ( ), [ & ] ( std::shared_ptr< obj >& group_obj ) {
 			auto group = std::static_pointer_cast< oxui::group >( group_obj );
-			auto group_str = std::string( group->title.begin( ), group->title.end( ) );
+			auto group_str = std::string ( group->title.begin ( ), group->title.end ( ) );
 
-			std::for_each( group->objects.begin( ), group->objects.end( ), [ & ] ( std::shared_ptr< obj >& object ) {
+			const auto jgroup = cJSON_CreateObject ( );
+
+			std::for_each ( group->objects.begin ( ), group->objects.end ( ), [ & ] ( std::shared_ptr< obj >& object ) {
 				switch ( object->type ) {
 				case object_checkbox: {
 					auto as_checkbox = ( ( std::shared_ptr< checkbox >& ) object );
-					auto obj_str = std::string( as_checkbox->label.begin( ), as_checkbox->label.end( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_checkbox->checked;
+					auto obj_str = std::string ( as_checkbox->label.begin ( ), as_checkbox->label.end ( ) );
+					cJSON_AddItemToObject ( jgroup, obj_str.c_str ( ), cJSON_CreateBool ( as_checkbox->checked ) );
 					break;
 				}
 				case object_slider: {
 					auto as_slider = ( ( std::shared_ptr< slider >& ) object );
-					auto obj_str = std::string( as_slider->label.begin( ), as_slider->label.end( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_slider->value;
+					auto obj_str = std::string ( as_slider->label.begin ( ), as_slider->label.end ( ) );
+					cJSON_AddItemToObject ( jgroup, obj_str.c_str ( ), cJSON_CreateNumber ( as_slider->value ) );
 					break;
 				}
 				case object_dropdown: {
 					auto as_dropdown = ( ( std::shared_ptr< dropdown >& ) object );
-					auto obj_str = std::string( as_dropdown->label.begin( ), as_dropdown->label.end( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_dropdown->value;
+					auto obj_str = std::string ( as_dropdown->label.begin ( ), as_dropdown->label.end ( ) );
+					cJSON_AddItemToObject ( jgroup, obj_str.c_str ( ), cJSON_CreateNumber ( as_dropdown->value ) );
 					break;
 				}
-				case object_textbox: {
-					auto as_textbox = ( ( std::shared_ptr< textbox >& ) object );
-					auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_textbox->buf;
-					break;
-				}
+									//case object_textbox: {
+									//	auto as_textbox = ( ( std::shared_ptr< textbox >& ) object );
+									//	auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
+									//	json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_textbox->buf;
+									//	break;
+									//}
 				case object_keybind: {
 					auto as_keybind = ( ( std::shared_ptr< keybind >& ) object );
 					auto obj_str = std::string ( as_keybind->label.begin ( ), as_keybind->label.end ( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ] = as_keybind->key;
+					cJSON_AddItemToObject ( jgroup, obj_str.c_str ( ), cJSON_CreateNumber ( as_keybind->key ) );
 					break;
 				}
 				case object_colorpicker: {
 					auto as_colorpicker = ( ( std::shared_ptr< color_picker >& ) object );
 					auto obj_str = std::string ( as_colorpicker->label.begin ( ), as_colorpicker->label.end ( ) );
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "r" ) ] = as_colorpicker->clr.r;
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "g" ) ] = as_colorpicker->clr.g;
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "b" ) ] = as_colorpicker->clr.b;
-					json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "a" ) ] = as_colorpicker->clr.a;
+					const auto clr_arr = cJSON_CreateArray ( );
+					cJSON_AddItemToArray ( clr_arr, cJSON_CreateNumber ( as_colorpicker->clr.r ) );
+					cJSON_AddItemToArray ( clr_arr, cJSON_CreateNumber ( as_colorpicker->clr.g ) );
+					cJSON_AddItemToArray ( clr_arr, cJSON_CreateNumber ( as_colorpicker->clr.b ) );
+					cJSON_AddItemToArray ( clr_arr, cJSON_CreateNumber ( as_colorpicker->clr.a ) );
+					cJSON_AddItemToObject ( jgroup, obj_str.c_str ( ), clr_arr );
 					break;
 				}
 				}
-				} );
 			} );
+
+			cJSON_AddItemToObject ( jtab, group_str.c_str ( ), jgroup );
 		} );
 
-	const auto dump = json.dump( 4 );
+		cJSON_AddItemToObject ( window, tab_str.c_str ( ), jtab );
+	} );
 
-	std::ofstream ofile( file );
-	ofile.write( dump.data( ), dump.length( ) );
-	ofile.close( );
+	cJSON_AddItemToObject ( json, window_str.c_str ( ), window );
+
+	const auto dump = cJSON_Print ( json );
+
+	wchar_t appdata [ MAX_PATH ];
+
+	if ( SUCCEEDED ( LI_FN ( SHGetFolderPathW )( nullptr, N ( CSIDL_PERSONAL ), nullptr, N ( int ( SHGFP_TYPE_CURRENT ) ), appdata ) ) ) {
+		LI_FN ( CreateDirectoryW )( ( std::wstring ( appdata ) + _ ( L"\\sesame" ) ).data ( ), nullptr );
+		LI_FN ( CreateDirectoryW )( ( std::wstring ( appdata ) + _ ( L"\\sesame\\configs" ) ).data ( ), nullptr );
+
+		std::ofstream ofile ( std::wstring ( appdata ) + _ ( L"\\sesame\\configs\\" ) + file );
+
+		if ( ofile.is_open ( ) ) {
+			ofile.write ( dump, strlen ( dump ) );
+			ofile.close ( );
+		}
+	}
+
+	cJSON_Delete ( json );
 }
 
 void oxui::window::load_state( const str& file ) {
 	std::string dump;
-	std::ifstream ofile( file );
 
-	if ( !ofile.is_open( ) )
+	wchar_t appdata [ MAX_PATH ];
+
+	if ( SUCCEEDED ( LI_FN ( SHGetFolderPathW )( nullptr, N ( CSIDL_PERSONAL ), nullptr, N ( int ( SHGFP_TYPE_CURRENT ) ), appdata ) ) ) {
+		LI_FN ( CreateDirectoryW )( ( std::wstring ( appdata ) + _ ( L"\\sesame" ) ).data ( ), nullptr );
+		LI_FN ( CreateDirectoryW )( ( std::wstring ( appdata ) + _ ( L"\\sesame\\configs" ) ).data ( ), nullptr );
+	}
+
+	std::ifstream ofile ( std::wstring ( appdata ) + _ ( L"\\sesame\\configs\\" ) + file );
+
+	if ( !ofile.is_open ( ) )
 		return;
 
-	ofile.seekg( 0, std::ios::end );
-	const auto fsize = ofile.tellg( );
-	ofile.seekg( 0, std::ios::beg );
+	ofile.seekg ( 0, std::ios::end );
+	const auto fsize = ofile.tellg ( );
+	ofile.seekg ( 0, std::ios::beg );
 	char* str = new char [ fsize ];
-	ofile.read( str, fsize );
+	ofile.read ( str, fsize );
 	dump = str;
 	delete [ ] str;
-	ofile.close( );
+	ofile.close ( );
 
-	nlohmann::json json = nlohmann::json::parse( dump );
-
-	auto window_str = std::string( title.begin( ), title.end( ) );
-
-	/* window doesn't exist */
-	if ( !json.contains( window_str ) )
+	if ( dump.empty ( ) )
 		return;
 
-	std::for_each( objects.begin( ), objects.end( ), [ & ] ( std::shared_ptr< obj > tab_obj ) {
+	const auto json = cJSON_Parse ( dump.c_str ( ) );
+
+	if ( !json ) {
+		dbg_print ( cJSON_GetErrorPtr ( ) );
+		cJSON_Delete ( json );
+		return;
+	}
+
+	auto window_str = std::string ( title.begin ( ), title.end ( ) );
+
+	const auto jwindow = cJSON_GetObjectItemCaseSensitive ( json, window_str.c_str ( ) );
+
+	if ( !jwindow ) {
+		dbg_print ( cJSON_GetErrorPtr ( ) );
+		cJSON_Delete ( json );
+		return;
+	}
+
+	std::for_each ( objects.begin ( ), objects.end ( ), [ & ] ( std::shared_ptr< obj > tab_obj ) {
 		auto tab = std::static_pointer_cast< oxui::tab >( tab_obj );
-		auto tab_str = std::string( tab->title.begin( ), tab->title.end( ) );
+		auto tab_str = std::string ( tab->title.begin ( ), tab->title.end ( ) );
 
-		/* tab doesn't exist */
-		if ( !json [ window_str ].contains( tab_str ) )
+		const auto jtab = cJSON_GetObjectItemCaseSensitive ( jwindow, tab_str.c_str ( ) );
+
+		if ( !jtab ) {
+			dbg_print ( cJSON_GetErrorPtr ( ) );
 			return;
+		}
 
-		std::for_each( tab->objects.begin( ), tab->objects.end( ), [ & ] ( std::shared_ptr< obj > group_obj ) {
+		std::for_each ( tab->objects.begin ( ), tab->objects.end ( ), [ & ] ( std::shared_ptr< obj > group_obj ) {
 			auto group = std::static_pointer_cast< oxui::group >( group_obj );
-			auto group_str = std::string( group->title.begin( ), group->title.end( ) );
+			auto group_str = std::string ( group->title.begin ( ), group->title.end ( ) );
 
-			/* group doesn't exist */
-			if ( !json [ window_str ][ tab_str ].contains( group_str ) )
+			const auto jgroup = cJSON_GetObjectItemCaseSensitive ( jtab, group_str.c_str ( ) );
+
+			if ( !jgroup ) {
+				dbg_print ( cJSON_GetErrorPtr ( ) );
 				return;
+			}
 
-			std::for_each( group->objects.begin( ), group->objects.end( ), [ & ] ( std::shared_ptr< obj >& object ) {
+			std::for_each ( group->objects.begin ( ), group->objects.end ( ), [ & ] ( std::shared_ptr< obj >& object ) {
 				switch ( object->type ) {
 				case object_checkbox: {
-					auto as_checkbox = ( checkbox* ) object.get( );
-					auto obj_str = std::string( as_checkbox->label.begin( ), as_checkbox->label.end( ) );
+					auto as_checkbox = ( checkbox* ) object.get ( );
+					auto obj_str = std::string ( as_checkbox->label.begin ( ), as_checkbox->label.end ( ) );
 
-					/* control doesn't exist */
-					if ( !json [ window_str ][ tab_str ][ group_str ].contains( obj_str ) )
+					const auto jitem = cJSON_GetObjectItemCaseSensitive ( jgroup, obj_str.c_str ( ) );
+
+					if ( !jitem || !cJSON_IsBool ( jitem ) ) {
+						dbg_print ( cJSON_GetErrorPtr ( ) );
 						return;
+					}
 
-					as_checkbox->checked = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< bool >( );
+					as_checkbox->checked = jitem->valueint;
 					break;
 				}
 				case object_slider: {
-					auto as_slider = ( slider* ) object.get( );
-					auto obj_str = std::string( as_slider->label.begin( ), as_slider->label.end( ) );
+					auto as_slider = ( slider* ) object.get ( );
+					auto obj_str = std::string ( as_slider->label.begin ( ), as_slider->label.end ( ) );
 
-					/* control doesn't exist */
-					if ( !json [ window_str ][ tab_str ][ group_str ].contains( obj_str ) )
+					const auto jitem = cJSON_GetObjectItemCaseSensitive ( jgroup, obj_str.c_str ( ) );
+
+					if ( !jitem || !cJSON_IsNumber ( jitem ) ) {
+						dbg_print ( cJSON_GetErrorPtr ( ) );
 						return;
+					}
 
-					as_slider->value = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< double >( );
+					as_slider->value = jitem->valuedouble;
 					break;
 				}
 				case object_dropdown: {
 					auto as_dropdown = ( dropdown* ) object.get ( );
 					auto obj_str = std::string ( as_dropdown->label.begin ( ), as_dropdown->label.end ( ) );
 
-					/* control doesn't exist */
-					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
-						return;
+					const auto jitem = cJSON_GetObjectItemCaseSensitive ( jgroup, obj_str.c_str ( ) );
 
-					as_dropdown->value = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< int > ( );
+					if ( !jitem || !cJSON_IsNumber ( jitem ) ) {
+						dbg_print ( cJSON_GetErrorPtr ( ) );
+						return;
+					}
+
+					as_dropdown->value = jitem->valueint;
 					break;
 				}
-				//case object_textbox: {
-				//	auto as_textbox = ( textbox* ) object.get ( );
-				//	auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
-				//
-				//	/* control doesn't exist */
-				//	if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
-				//		return;
-				//
-				//	const auto as_str = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< std::string > ( );
-				//	as_textbox->buf = std::wstring ( as_str.begin ( ), as_str.end ( ) );
-				//	break;
-				//}
+									//case object_textbox: {
+									//	auto as_textbox = ( textbox* ) object.get ( );
+									//	auto obj_str = std::string ( as_textbox->label.begin ( ), as_textbox->label.end ( ) );
+									//
+									//	/* control doesn't exist */
+									//	if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
+									//		return;
+									//
+									//	const auto as_str = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< std::string > ( );
+									//	as_textbox->buf = std::wstring ( as_str.begin ( ), as_str.end ( ) );
+									//	break;
+									//}
 				case object_keybind: {
 					auto as_keybind = ( keybind* ) object.get ( );
 					auto obj_str = std::string ( as_keybind->label.begin ( ), as_keybind->label.end ( ) );
 
-					/* control doesn't exist */
-					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
-						return;
+					const auto jitem = cJSON_GetObjectItemCaseSensitive ( jgroup, obj_str.c_str ( ) );
 
-					as_keybind->key = json [ window_str ][ tab_str ][ group_str ][ obj_str ].get< int > ( );
+					if ( !jitem || !cJSON_IsNumber ( jitem ) ) {
+						dbg_print ( cJSON_GetErrorPtr ( ) );
+						return;
+					}
+
+					as_keybind->key = jitem->valueint;
 					break;
 				}
 				case object_colorpicker: {
 					auto as_colorpicker = ( color_picker* ) object.get ( );
 					auto obj_str = std::string ( as_colorpicker->label.begin ( ), as_colorpicker->label.end ( ) );
 
-					/* control doesn't exist */
-					if ( !json [ window_str ][ tab_str ][ group_str ].contains ( obj_str ) )
-						return;
+					const auto jitem = cJSON_GetObjectItemCaseSensitive ( jgroup, obj_str.c_str ( ) );
 
-					as_colorpicker->clr.r = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "r" ) ].get< int > ( );
-					as_colorpicker->clr.g = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "g" ) ].get< int > ( );
-					as_colorpicker->clr.b = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "b" ) ].get< int > ( );
-					as_colorpicker->clr.a = json [ window_str ][ tab_str ][ group_str ][ obj_str ][ _ ( "a" ) ].get< int > ( );
+					if ( !jitem || !cJSON_IsArray ( jitem ) ) {
+						dbg_print ( cJSON_GetErrorPtr ( ) );
+						return;
+					}
+
+					const cJSON* clr_channel = nullptr;
+					int clr_channel_num = 0;
+
+					cJSON_ArrayForEach ( clr_channel, jitem ) {
+						if ( !clr_channel || !cJSON_IsNumber ( clr_channel ) ) {
+							dbg_print ( cJSON_GetErrorPtr ( ) );
+							clr_channel_num++;
+							continue;
+						}
+
+						switch ( clr_channel_num ) {
+						case 0: as_colorpicker->clr.r = clr_channel->valueint; break;
+						case 1: as_colorpicker->clr.g = clr_channel->valueint; break;
+						case 2: as_colorpicker->clr.b = clr_channel->valueint; break;
+						case 3: as_colorpicker->clr.a = clr_channel->valueint; break;
+						}
+
+						clr_channel_num++;
+					}
+
 					break;
 				}
 				}
-				} );
 			} );
 		} );
+	} );
+
+	cJSON_Delete ( json );
 }
 
 void oxui::window::think( ) {
@@ -400,4 +487,6 @@ void oxui::window::draw( ) {
 		overlay_func( );
 
 	shapes::click_switch = false;
+
+	scroll_delta = 0.0;
 }

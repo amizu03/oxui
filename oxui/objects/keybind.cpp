@@ -167,41 +167,58 @@ oxui::str key_to_str ( int vk ) {
 	return as_str;
 }
 
+void oxui::keybind::think ( ) {
+	window& parent_window = find_parent< window > ( object_window );
+	pos& cursor_pos = parent_window.cursor_pos;
+	animate ( rect ( cursor_pos.x, cursor_pos.y, area.w, area.h ) );
 
-void oxui::keybind::think( ) {
-	auto& parent_window = find_parent< window >( object_window );
-	auto& cursor_pos = parent_window.cursor_pos;
-	animate( rect( cursor_pos.x, cursor_pos.y, area.w, area.h ) );
-
-	if ( shapes::clicking ( rect ( cursor_pos.x, cursor_pos.y, area.w, area.h ) ) )
+	if ( shapes::clicking ( rect ( cursor_pos.x, cursor_pos.y, area.w, area.h ), false, true ) )
 		searching = true;
 
 	if ( searching ) {
-		if ( GetAsyncKeyState ( VK_MBUTTON ) ) {
-			key = VK_MBUTTON;
-			searching = false;
-			return;
-		}
+		for ( int i = 0; i < 255; i++ ) {
+			if ( GetAsyncKeyState ( i ) ) {
 
-		if ( GetAsyncKeyState ( VK_XBUTTON1 ) ) {
-			key = VK_XBUTTON1;
-			searching = false;
-			return;
-		}
+				/* we can't bind left/right click */
+				if ( i == VK_LBUTTON || i == VK_RBUTTON ) {
+					return;
+				}
 
-		if ( GetAsyncKeyState ( VK_XBUTTON2 ) ) {
-			key = VK_XBUTTON2;
-			searching = false;
-			return;
-		}
+				/* bind other mouse binds */
+				if ( i == VK_MBUTTON ) {
+					key = VK_MBUTTON;
+					shapes::finished_input_frame = searching = false;
+					return;
+				}
 
-		for ( auto i = 8; i < 512; i++ ) {
-			if ( GetAsyncKeyState( i ) ) {
+				if ( i == VK_XBUTTON1 ) {
+					key = VK_XBUTTON1;
+					shapes::finished_input_frame = searching = false;
+					return;
+				}
+
+				if ( i == VK_XBUTTON2 ) {
+					key = VK_XBUTTON2;
+					shapes::finished_input_frame = searching = false;
+					return;
+				}
+
+				/* bind */
 				key = i;
-				searching = false;
-				return;
+
+				/* invalidate if pressing ESCAPE */
+				if ( i == VK_ESCAPE ) {
+					key = -1;
+					shapes::finished_input_frame = searching = false;
+					return;
+				}
+
+				/* stop searching */
+				shapes::finished_input_frame = searching = false;
+
 			}
 		}
+
 	}
 }
 

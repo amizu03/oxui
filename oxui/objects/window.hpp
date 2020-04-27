@@ -17,22 +17,22 @@ namespace oxui {
 	*/
 	class window : public obj {
 		pos click_offset = pos( );
-		bool pressing_move_key = false;
-		bool pressing_open_key = false;
 		str title;
 		int toggle_bind = 0;
-		std::vector< std::shared_ptr< obj > > objects;
 		std::function< void( ) > overlay_func;
 		bool render_overlay = true;
 
 	public:
-		bool open = true;
+		bool open = false;
 		double scroll_delta = 0.0;
 		std::array< bool, 5 > mouse_down { false };
 		std::array< bool, 512 > key_down { false };
 		pos cursor_pos;
 		std::function< void( wchar_t ) > keyboard_handler_func;
 		bool handle_keyboard = true;
+		bool pressing_move_key = false;
+		bool pressing_open_key = false;
+		std::vector< std::shared_ptr< obj > > objects;
 
 		long __stdcall wndproc( HWND hwnd, std::uint32_t msg, std::uintptr_t wparam, std::uint32_t lparam ) {
 			if ( open ) {
