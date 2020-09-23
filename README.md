@@ -1,5 +1,8 @@
+THIS REPOSITORY WILL NO LONGER BE UPDATED!
+THIS PROJECT WILL BE ABANDONED AS THE IMPLEMENTATION WAS INNEFICIENT AND FLAWED.
+
 # OXUI
-OXUI Framework - oxy's static GUI framework
+OXUI Framework - sesame's retained-mode GUI framework
 
 # DEMO
 ![](demo.png)
